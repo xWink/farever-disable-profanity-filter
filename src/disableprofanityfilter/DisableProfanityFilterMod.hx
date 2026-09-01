@@ -37,7 +37,7 @@ class DisableProfanityFilterMod {
     static function beforeCleanPlayerText(text:String):HlxPrefixResult<String> {
         if (!disableProfanityFilter.get())
             return Continue;
-        return SkipWith(StringTools.htmlEscape(text, null));
+        return SkipWith(StringTools.htmlEscape(text));
     }
 
     static function drawSettings():Void {
@@ -191,4 +191,3 @@ class DisableProfanityFilterMod {
         } catch (_:Dynamic) {}
     }
 }
-
