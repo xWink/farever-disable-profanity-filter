@@ -22,11 +22,24 @@ class DisableProfanityFilterMod {
     static var hotkeyAlt:Bool = false;
     static var hotkeySuper:Bool = false;
     static var capturingHotkey:Bool = false;
+    static var lastConfigModified:Float = -1.0;
+    static var configCheckTimer:Float = 0.0;
 
     static function main():Void {
         loadConfig();
+        if (!FileSystem.exists(CONFIG_PATH))
+            saveConfig();
         panelOpen.set(!hasSeenMenu);
         ImGui.register(HlxRuntime.moduleName(), drawSettings);
+    }
+
+    @:hlx.postfix(GameApp.update)
+    static function afterGameAppUpdate(instance:Dynamic, dt:Float, result:Void):Void {
+        configCheckTimer += dt;
+        if (configCheckTimer >= 1.0) {
+            configCheckTimer = 0.0;
+            reloadConfigIfChanged();
+        }
     }
 
     // Farever's chat messages and speech bubbles pass through cleanPlayerText.
@@ -154,6 +167,23 @@ class DisableProfanityFilterMod {
         };
     }
 
+    static function reloadConfigIfChanged():Void {
+        try {
+            if (!FileSystem.exists(CONFIG_PATH))
+                return;
+            var modified = FileSystem.stat(CONFIG_PATH).mtime.getTime();
+            if (modified != lastConfigModified)
+                loadConfig();
+        } catch (_:Dynamic) {}
+    }
+
+    static function updateConfigModifiedTime():Void {
+        try {
+            if (FileSystem.exists(CONFIG_PATH))
+                lastConfigModified = FileSystem.stat(CONFIG_PATH).mtime.getTime();
+        } catch (_:Dynamic) {}
+    }
+
     static function loadConfig():Void {
         try {
             if (!FileSystem.exists(CONFIG_PATH))
@@ -174,6 +204,7 @@ class DisableProfanityFilterMod {
             else
                 hasSeenMenu = true;
         } catch (_:Dynamic) {}
+        updateConfigModifiedTime();
     }
 
     static function saveConfig():Void {
@@ -188,6 +219,7 @@ class DisableProfanityFilterMod {
                 hasSeenMenu: hasSeenMenu
             };
             File.saveContent(CONFIG_PATH, Json.stringify(data, null, "  "));
+            updateConfigModifiedTime();
         } catch (_:Dynamic) {}
     }
 }
