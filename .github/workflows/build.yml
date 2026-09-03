@@ -35,6 +35,7 @@ jobs:
         run: |
           mkdir -p package/hlx/mods/disable-profanity-filter
           cp build/disable-profanity-filter/disable-profanity-filter.hl package/hlx/mods/disable-profanity-filter/
+          cp configFormats.json package/hlx/mods/disable-profanity-filter/
           printf "Requires HLX Core and the Farever ImGui plugin.\nInstall with Vortex, or extract the archive into the Farever game folder.\n" > package/hlx/mods/disable-profanity-filter/README.txt
           cd package
           zip -r ../farever-disable-profanity-filter.zip hlx
