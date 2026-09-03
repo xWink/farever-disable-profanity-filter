@@ -6,7 +6,7 @@
     {
       "key": "disableProfanityFilter",
       "type": "checkbox",
-      "label": "Disable profanity filter"
+      "label": "Enabled"
     }
   ]
 }
