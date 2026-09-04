@@ -1,6 +1,7 @@
 package disableprofanityfilter;
 
 import haxe.Json;
+import hlx.runtime.Bus;
 import hlx.runtime.HlxPrefixResult;
 import sys.FileSystem;
 import sys.io.File;
@@ -8,24 +9,22 @@ import sys.io.File;
 @:build(hlx.runtime.Mod.build())
 class DisableProfanityFilterMod {
     static inline var CONFIG_PATH = "hlx/mods/disable-profanity-filter/config.json";
+    static inline var SETTINGS_CHANGED_TOPIC_PREFIX =
+        "better-mod-settings/config-changed/";
 
     static var disableProfanityFilter:Bool = true;
-
-    static var lastConfigModified:Float = -1.0;
-    static var configCheckTimer:Float = 0.0;
 
     static function main():Void {
         loadConfig();
         saveConfig();
+        Bus.subscribe(
+            SETTINGS_CHANGED_TOPIC_PREFIX + HlxRuntime.moduleName(),
+            onBetterModSettingsChanged
+        );
     }
 
-    @:hlx.postfix(GameApp.update)
-    static function afterGameAppUpdate(instance:Dynamic, dt:Float, result:Void):Void {
-        configCheckTimer += dt;
-        if (configCheckTimer >= 1.0) {
-            configCheckTimer = 0.0;
-            reloadConfigIfChanged();
-        }
+    static function onBetterModSettingsChanged(_:Dynamic):Void {
+        loadConfig();
     }
 
     // Farever's chat messages and speech bubbles pass through cleanPlayerText.
@@ -39,23 +38,6 @@ class DisableProfanityFilterMod {
         return SkipWith(StringTools.htmlEscape(text));
     }
 
-    static function reloadConfigIfChanged():Void {
-        try {
-            if (!FileSystem.exists(CONFIG_PATH))
-                return;
-            var modified = FileSystem.stat(CONFIG_PATH).mtime.getTime();
-            if (modified != lastConfigModified)
-                loadConfig();
-        } catch (_:Dynamic) {}
-    }
-
-    static function updateConfigModifiedTime():Void {
-        try {
-            if (FileSystem.exists(CONFIG_PATH))
-                lastConfigModified = FileSystem.stat(CONFIG_PATH).mtime.getTime();
-        } catch (_:Dynamic) {}
-    }
-
     static function loadConfig():Void {
         try {
             if (!FileSystem.exists(CONFIG_PATH))
@@ -65,7 +47,6 @@ class DisableProfanityFilterMod {
             if (Reflect.hasField(data, "disableProfanityFilter"))
                 disableProfanityFilter = Reflect.field(data, "disableProfanityFilter");
         } catch (_:Dynamic) {}
-        updateConfigModifiedTime();
     }
 
     static function saveConfig():Void {
@@ -74,7 +55,6 @@ class DisableProfanityFilterMod {
                 disableProfanityFilter: disableProfanityFilter
             };
             File.saveContent(CONFIG_PATH, Json.stringify(data, null, "  "));
-            updateConfigModifiedTime();
         } catch (_:Dynamic) {}
     }
 }
